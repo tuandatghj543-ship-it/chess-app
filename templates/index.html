@@ -46,7 +46,7 @@
         .selected { background-color: #7b61ff !important; }
         .hint-source { outline: 4px solid #00e676 !important; outline-offset: -4px; z-index: 8; border-radius: 50%; }
 
-        .piece-element { position: absolute; width: 12.5%; height: 12.5%; display: flex; align-items: center; justify-content: center; font-size: calc(100vw / 11); max-font-size: 26px; pointer-events: none; z-index: 10; transition: transform 0.15s ease-out; }
+        .piece-element { position: absolute; width: 12.5%; height: 12.5%; display: flex; align-items: center; justify-content: center; font-size: calc(100vw / 11); max-font-size: 26px; pointer-events: none; z-index: 10; transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1); }
         @media (min-width: 360px) { .piece-element { font-size: 26px; } }
 
         .dot { position: absolute; width: 30%; height: 30%; background-color: rgba(0, 0, 0, 0.35); border-radius: 50%; z-index: 4; }
@@ -56,7 +56,7 @@
         #arrow-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 20; }
 
         .coords-row { display: grid; grid-template-columns: repeat(8, 1fr); color: #aaa; font-size: 12px; font-weight: bold; padding: 4px 0; margin-left: 24px; margin-right: 24px; text-align: center; }
-        .coords-col { display: flex; flex-direction: column; justify-style: space-around; color: #aaa; font-size: 12px; font-weight: bold; width: 24px; align-items: center; aspect-ratio: 1 / 1; }
+        .coords-col { display: flex; flex-direction: column; justify-content: space-around; color: #aaa; font-size: 12px; font-weight: bold; width: 24px; align-items: center; aspect-ratio: 1 / 1; }
 
         .text-move-box { display: flex; gap: 6px; width: 100%; max-width: 360px; margin: 6px auto; }
         .text-move-input { flex: 1; padding: 8px 12px; font-size: 14px; font-weight: bold; border: 2px solid #7b61ff; border-radius: 6px; background: #222; color: #fff; outline: none; }
@@ -88,11 +88,6 @@
 
         .promotion-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
         .promo-btn { background: #3a3a3a; border: 2px solid #7b61ff; border-radius: 8px; font-size: 28px; padding: 10px 0; cursor: pointer; color: #fff; }
-
-        .music-box { background: #1a1a1a; border: 1px solid #444; padding: 8px; border-radius: 8px; margin: 8px 0; text-align: left; }
-        .music-controls { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
-        .m-btn { background: #333; color: white; border: 1px solid #666; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 4px; cursor: pointer; flex: 1; min-width: 80px; }
-        .m-btn.active { background: #00e676; color: #000; border-color: #00e676; }
 
         .setting-row { display: flex; justify-content: space-between; align-items: center; margin: 6px 0; font-size: 13px; font-weight: bold; }
         .modal-actions { display: flex; gap: 8px; justify-content: space-between; }
@@ -134,8 +129,6 @@
                 <button class="menu-btn" onclick="openMenu()">🏠 Menu</button>
             </div>
         </div>
-
-        <audio id="bg-music" onended="handleSongEnded()"></audio>
 
         <div class="eval-box" id="eval-text">Bắt đầu ván đấu mới! Chúc bạn chơi vui vẻ 🐧</div>
 
@@ -271,18 +264,6 @@
             <button class="opt-btn" id="btn-medium" onclick="setDifficulty('medium')">⚖️ Vừa (Thắng +4đ | Hòa +2đ)</button>
             <button class="opt-btn" id="btn-hard" onclick="setDifficulty('hard')">👹 Khó (Thắng +10đ | Hòa +5đ)</button>
 
-            <div class="music-box">
-                <div class="setting-row" style="margin:0;">
-                    <span>🎵 Nhạc nền Chill:</span>
-                    <button class="menu-btn" id="music-toggle-btn" onclick="toggleMusic()" style="background: #555;">Tắt 🔇</button>
-                </div>
-                <div style="font-size: 11px; color: #ffeb3b; margin-top: 4px;" id="current-song-display">Bài: music_chess1.mp3</div>
-                <div class="music-controls">
-                    <button class="m-btn" id="btn-loop-one" onclick="toggleLoopSingle()">🔁 Lặp 1 bài: TẮT</button>
-                    <button class="m-btn" onclick="nextSong()">⏭️ Bài tiếp</button>
-                </div>
-            </div>
-
             <button class="play-btn" onclick="startGame()">▶️ TIẾP TỤC / VÁN MỚI</button>
             <button class="load-btn-menu" id="load-save-btn" onclick="loadSavedGame()" style="display:none;">📂 TẢI GAME ĐÃ LƯU</button>
             <button class="ach-btn-menu" onclick="openAchievementsModal()">🏆 THÀNH TỰU</button>
@@ -380,85 +361,6 @@
         let editorSelectedPiece = 'P';
         let editorBoardFenMap = {};
 
-        let playlist = ["music_chess1.mp3"];
-        let currentTrackIndex = 0;
-        let isLoopSingle = false;
-        let isMusicPlaying = false;
-        const musicAudio = document.getElementById('bg-music');
-
-        async function fetchPlaylist() {
-            try {
-                let res = await fetch('/get-playlist');
-                let data = await res.json();
-                if (data.playlist && data.playlist.length > 0) playlist = data.playlist;
-            } catch (e) { console.log(e); }
-            updateMusicUI();
-        }
-
-        function playCurrentTrack() {
-            if (!playlist || playlist.length === 0) return;
-            let filename = playlist[currentTrackIndex];
-            musicAudio.src = '/0/music_chess/' + encodeURIComponent(filename);
-            if (isMusicPlaying) {
-                musicAudio.play().catch(e => console.log(e));
-            }
-            updateMusicUI();
-        }
-
-        function handleSongEnded() {
-            if (isLoopSingle) {
-                musicAudio.currentTime = 0;
-                musicAudio.play().catch(e => console.log(e));
-            } else {
-                currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-                playCurrentTrack();
-            }
-        }
-
-        function nextSong() {
-            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-            playCurrentTrack();
-        }
-
-        function toggleLoopSingle() {
-            isLoopSingle = !isLoopSingle;
-            updateMusicUI();
-        }
-
-        function toggleMusic() {
-            let btn = document.getElementById('music-toggle-btn');
-            if (isMusicPlaying) {
-                musicAudio.pause();
-                btn.innerText = "Tắt 🔇";
-                btn.style.background = "#555";
-                isMusicPlaying = false;
-            } else {
-                isMusicPlaying = true;
-                playCurrentTrack();
-                musicAudio.play().then(() => {
-                    btn.innerText = "Bật 🔊";
-                    btn.style.background = "#7b61ff";
-                }).catch(e => console.log("Audio error:", e));
-            }
-        }
-
-        function updateMusicUI() {
-            let loopBtn = document.getElementById('btn-loop-one');
-            if (isLoopSingle) {
-                loopBtn.innerText = "🔁 Lặp 1 bài: BẬT";
-                loopBtn.classList.add('active');
-            } else {
-                loopBtn.innerText = "🔁 Lặp 1 bài: TẮT";
-                loopBtn.classList.remove('active');
-            }
-            let songDisplay = document.getElementById('current-song-display');
-            if (playlist.length > 0) {
-                songDisplay.innerText = "Bài (" + (currentTrackIndex + 1) + "/" + playlist.length + "): " + playlist[currentTrackIndex];
-            } else {
-                songDisplay.innerText = "Chưa có nhạc";
-            }
-        }
-
         async function setControlMode(mode) {
             if (isGameStarted) return;
             currentControlMode = mode;
@@ -526,8 +428,6 @@
             document.getElementById('side-text').innerText = (userColor === 'w') ? 'Trắng (♔)' : 'Đen (♚)';
             document.getElementById('mode-bonus-badge').style.display = (currentControlMode === 'text') ? 'inline' : 'none';
             document.getElementById('text-move-container').style.display = (currentControlMode === 'text') ? 'flex' : 'none';
-
-            updateMusicUI();
         }
 
         async function openMenu() {
@@ -852,7 +752,7 @@
             if (currentTurn !== userColor && !statusInfo.is_over && !isAiThinking) {
                 isAiThinking = true;
                 renderBoard();
-                triggerAiMove();
+                setTimeout(triggerAiMove, 400);
             }
         }
 
@@ -878,7 +778,7 @@
                 if (currentTurn !== userColor && !statusInfo.is_over) {
                     isAiThinking = true;
                     renderBoard();
-                    triggerAiMove();
+                    setTimeout(triggerAiMove, 400);
                 }
             } else alert('Không tìm thấy bản lưu cũ!');
         }
@@ -912,7 +812,7 @@
             if (currentTurn !== userColor && !statusInfo.is_over) {
                 isAiThinking = true;
                 renderBoard();
-                triggerAiMove();
+                setTimeout(triggerAiMove, 400);
             }
         }
 
@@ -954,7 +854,7 @@
                     document.getElementById('modal-title').innerText = statusInfo.title;
                     document.getElementById('modal-msg').innerText = statusInfo.message;
                     document.getElementById('game-modal').style.display = 'flex';
-                }, 100);
+                }, 300);
             }
         }
 
@@ -1226,7 +1126,7 @@
                 }
             }
 
-            requestAnimationFrame(() => drawHintArrow(hintFrom, hintTo, files, ranks));
+            setTimeout(() => drawHintArrow(hintFrom, hintTo, files, ranks), 100);
         }
 
         function handleSquareClick(sqName, sqInfo) {
@@ -1300,7 +1200,7 @@
             if (currentTurn !== userColor && !statusInfo.is_over) {
                 isAiThinking = true;
                 renderBoard();
-                triggerAiMove();
+                setTimeout(triggerAiMove, 300);
             }
         }
 
@@ -1328,7 +1228,7 @@
                 if (currentTurn !== userColor && !statusInfo.is_over) {
                     isAiThinking = true;
                     renderBoard();
-                    triggerAiMove();
+                    setTimeout(triggerAiMove, 300);
                 }
             } catch (err) {
                 isAiThinking = false;
@@ -1358,7 +1258,6 @@
         }
 
         async function initGame() {
-            await fetchPlaylist();
             let res = await fetch('/init-data');
             let data = await res.json();
             syncBoardData(data);
