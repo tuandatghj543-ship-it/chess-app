@@ -91,7 +91,7 @@
 
         .music-box { background: #1a1a1a; border: 1px solid #444; padding: 8px; border-radius: 8px; margin: 8px 0; text-align: left; }
         .music-controls { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
-        .m-btn { background: #333; color: white; border: 1px solid #666; padding: 4px 6px; font-size: 11px; font-weight: bold; border-radius: 4px; cursor: pointer; flex: 1; min-width: 60px; }
+        .m-btn { background: #333; color: white; border: 1px solid #666; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 4px; cursor: pointer; flex: 1; min-width: 80px; }
         .m-btn.active { background: #00e676; color: #000; border-color: #00e676; }
 
         .setting-row { display: flex; justify-content: space-between; align-items: center; margin: 6px 0; font-size: 13px; font-weight: bold; }
@@ -278,8 +278,7 @@
                 </div>
                 <div style="font-size: 11px; color: #ffeb3b; margin-top: 4px;" id="current-song-display">Bài: music_chess1.mp3</div>
                 <div class="music-controls">
-                    <button class="m-btn" onclick="prevSong()">⏮️ Trước</button>
-                    <button class="m-btn" id="btn-loop-one" onclick="toggleLoopSingle()">🔁 Lặp: TẮT</button>
+                    <button class="m-btn" id="btn-loop-one" onclick="toggleLoopSingle()">🔁 Lặp 1 bài: TẮT</button>
                     <button class="m-btn" onclick="nextSong()">⏭️ Bài tiếp</button>
                 </div>
             </div>
@@ -381,127 +380,27 @@
         let editorSelectedPiece = 'P';
         let editorBoardFenMap = {};
 
-        // ==========================================
-        // HE THONG AUDIO & SFX ENGINE (WEBAUDIO API)
-        // ==========================================
-        let audioCtx = null;
-
-        function getAudioContext() {
-            if (!audioCtx) {
-                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                if (AudioContextClass) {
-                    audioCtx = new AudioContextClass();
-                }
-            }
-            if (audioCtx && audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            return audioCtx;
-        }
-
-        // Tạo âm thanh SFX tự động bằng Oscillator (Không phụ thuộc file ngoài)
-        function playSFX(type) {
-            try {
-                const ctx = getAudioContext();
-                if (!ctx) return;
-
-                const now = ctx.currentTime;
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-
-                if (type === 'move') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(320, now);
-                    osc.frequency.exponentialRampToValueAtTime(140, now + 0.08);
-                    gain.gain.setValueAtTime(0.3, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-                    osc.start(now);
-                    osc.stop(now + 0.08);
-                } else if (type === 'capture') {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(550, now);
-                    osc.frequency.exponentialRampToValueAtTime(180, now + 0.12);
-                    gain.gain.setValueAtTime(0.45, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
-                    osc.start(now);
-                    osc.stop(now + 0.12);
-                } else if (type === 'check') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(523.25, now);
-                    osc.frequency.setValueAtTime(659.25, now + 0.09);
-                    gain.gain.setValueAtTime(0.35, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
-                    osc.start(now);
-                    osc.stop(now + 0.22);
-                } else if (type === 'win') {
-                    let notes = [440, 554.37, 659.25, 880];
-                    notes.forEach((freq, idx) => {
-                        const o = ctx.createOscillator();
-                        const g = ctx.createGain();
-                        o.connect(g);
-                        g.connect(ctx.destination);
-                        o.type = 'triangle';
-                        o.frequency.value = freq;
-                        const startTime = now + idx * 0.1;
-                        g.gain.setValueAtTime(0.3, startTime);
-                        g.gain.exponentialRampToValueAtTime(0.001, startTime + 0.28);
-                        o.start(startTime);
-                        o.stop(startTime + 0.28);
-                    });
-                } else if (type === 'lose') {
-                    let notes = [380, 320, 260, 200];
-                    notes.forEach((freq, idx) => {
-                        const o = ctx.createOscillator();
-                        const g = ctx.createGain();
-                        o.connect(g);
-                        g.connect(ctx.destination);
-                        o.type = 'sawtooth';
-                        o.frequency.value = freq;
-                        const startTime = now + idx * 0.12;
-                        g.gain.setValueAtTime(0.25, startTime);
-                        g.gain.exponentialRampToValueAtTime(0.001, startTime + 0.22);
-                        o.start(startTime);
-                        o.stop(startTime + 0.22);
-                    });
-                } else if (type === 'click') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(450, now);
-                    gain.gain.setValueAtTime(0.12, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
-                    osc.start(now);
-                    osc.stop(now + 0.04);
-                }
-            } catch (e) { console.log("SFX Error:", e); }
-        }
-
-        // Tự động kích hoạt Audio Context khi tương tác với trang
-        window.addEventListener('pointerdown', () => { getAudioContext(); }, { once: true });
-
-        // NẠP VÀ ĐIỀU KHIỂN NHẠC NỀN (BGM)
-        let playlist = ["music_chess1.mp3"];
+        // DANH SÁCH FILE NHẠC TỪ THƯ MỤC music_chess/
+        let playlist = [
+            "music_chess/music_chess1.mp3",
+            "music_chess/music_chess2.mp3",
+            "music_chess/music_chess3.mp3"
+        ];
         let currentTrackIndex = 0;
         let isLoopSingle = false;
         let isMusicPlaying = false;
         const musicAudio = document.getElementById('bg-music');
 
         async function fetchPlaylist() {
-            try {
-                let res = await fetch('/get-playlist');
-                let data = await res.json();
-                if (data.playlist && data.playlist.length > 0) playlist = data.playlist;
-            } catch (e) { console.log(e); }
+            // Đã dùng playlist cố định dạng music_chess/*
             updateMusicUI();
         }
 
         function playCurrentTrack() {
             if (!playlist || playlist.length === 0) return;
-            let filename = playlist[currentTrackIndex];
-            musicAudio.src = '/play-music/' + encodeURIComponent(filename);
-            if (isMusicPlaying) {
-                musicAudio.play().catch(e => console.log("BGM AutoPlay blocked:", e));
-            }
+            let filepath = playlist[currentTrackIndex];
+            musicAudio.src = '/' + filepath;
+            if (isMusicPlaying) musicAudio.play().catch(e => console.log(e));
             updateMusicUI();
         }
 
@@ -516,25 +415,16 @@
         }
 
         function nextSong() {
-            playSFX('click');
             currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
             playCurrentTrack();
         }
 
-        function prevSong() {
-            playSFX('click');
-            currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
-            playCurrentTrack();
-        }
-
         function toggleLoopSingle() {
-            playSFX('click');
             isLoopSingle = !isLoopSingle;
             updateMusicUI();
         }
 
         function toggleMusic() {
-            playSFX('click');
             let btn = document.getElementById('music-toggle-btn');
             if (isMusicPlaying) {
                 musicAudio.pause();
@@ -543,33 +433,35 @@
                 isMusicPlaying = false;
             } else {
                 if (!musicAudio.src) playCurrentTrack();
-                musicAudio.play().then(() => {
-                    btn.innerText = "Bật 🔊";
-                    btn.style.background = "#7b61ff";
-                    isMusicPlaying = true;
-                }).catch(e => console.log("Audio error:", e));
+                else {
+                    musicAudio.play().then(() => {
+                        btn.innerText = "Bật 🔊";
+                        btn.style.background = "#7b61ff";
+                        isMusicPlaying = true;
+                    }).catch(e => console.log("Audio error:", e));
+                }
             }
         }
 
         function updateMusicUI() {
             let loopBtn = document.getElementById('btn-loop-one');
             if (isLoopSingle) {
-                loopBtn.innerText = "🔁 Lặp: BẬT";
+                loopBtn.innerText = "🔁 Lặp 1 bài: BẬT";
                 loopBtn.classList.add('active');
             } else {
-                loopBtn.innerText = "🔁 Lặp: TẮT";
+                loopBtn.innerText = "🔁 Lặp 1 bài: TẮT";
                 loopBtn.classList.remove('active');
             }
             let songDisplay = document.getElementById('current-song-display');
             if (playlist.length > 0) {
-                songDisplay.innerText = "Bài (" + (currentTrackIndex + 1) + "/" + playlist.length + "): " + playlist[currentTrackIndex];
+                let trackName = playlist[currentTrackIndex].split('/').pop();
+                songDisplay.innerText = "Bài (" + (currentTrackIndex + 1) + "/" + playlist.length + "): " + trackName;
             } else {
                 songDisplay.innerText = "Chưa có nhạc";
             }
         }
 
         async function setControlMode(mode) {
-            playSFX('click');
             if (isGameStarted) return;
             currentControlMode = mode;
             updateMenuUI();
@@ -581,7 +473,6 @@
         }
 
         async function setSide(side) {
-            playSFX('click');
             if (isGameStarted) return;
             userSideSetting = side;
             updateMenuUI();
@@ -595,7 +486,6 @@
         }
 
         async function setDifficulty(level) {
-            playSFX('click');
             if (isGameStarted) return;
             currentDifficulty = level;
             updateMenuUI();
@@ -643,7 +533,6 @@
         }
 
         async function openMenu() {
-            playSFX('click');
             let closeBtn = document.getElementById('menu-close-x');
             closeBtn.style.display = isGameStarted ? 'block' : 'none';
             document.getElementById('game-wrapper').classList.add('hidden-board');
@@ -657,7 +546,6 @@
         }
 
         function exitGameToMenu() {
-            playSFX('click');
             isGameStarted = false;
             let closeBtn = document.getElementById('menu-close-x');
             closeBtn.style.display = 'none';
@@ -667,13 +555,11 @@
         }
 
         async function openShop() {
-            playSFX('click');
             fetchShopData();
             document.getElementById('shop-modal').style.display = 'flex';
         }
 
         async function openAchievementsModal() {
-            playSFX('click');
             let res = await fetch('/achievements-data');
             let data = await res.json();
             
@@ -698,14 +584,12 @@
         }
 
         function confirmClearData() {
-            playSFX('click');
             document.getElementById('confirm-msg').innerText = "Bạn có chắc chắn muốn xóa toàn bộ dữ liệu game (Điểm, Cửa hàng, Thành tựu, Lưu game)? Thao tác này không thể hoàn tác!";
             document.getElementById('confirm-action-btn').onclick = executeClearData;
             document.getElementById('confirm-modal').style.display = 'flex';
         }
 
         function confirmClearAchievements() {
-            playSFX('click');
             document.getElementById('confirm-msg').innerText = "Bạn có chắc chắn muốn xóa tất cả thành tựu đã đạt được?";
             document.getElementById('confirm-action-btn').onclick = executeClearAchievements;
             document.getElementById('confirm-modal').style.display = 'flex';
@@ -733,7 +617,6 @@
         }
 
         async function openToolsModal() {
-            playSFX('click');
             if (!isGameStarted || (statusInfo && statusInfo.is_over)) return;
             
             let res = await fetch('/shop-data');
@@ -752,7 +635,6 @@
         }
 
         function switchToolTab(tabName) {
-            playSFX('click');
             let btnHint = document.getElementById('tab-btn-hint');
             let btnReplay = document.getElementById('tab-btn-replay');
             let btnEditor = document.getElementById('tab-btn-editor');
@@ -791,7 +673,6 @@
         }
 
         function stepReplay(direction) {
-            playSFX('click');
             if (!replayStatesList.length) return;
             currentReplayIndex += direction;
             if (currentReplayIndex < 0) currentReplayIndex = 0;
@@ -842,7 +723,6 @@
         }
 
         async function applyReplayState() {
-            playSFX('click');
             if (!replayStatesList.length) return;
             let targetState = replayStatesList[currentReplayIndex];
 
@@ -872,7 +752,6 @@
         }
 
         async function resetEditorBoardDefault() {
-            playSFX('click');
             let res = await fetch('/get-default-editor-board');
             let data = await res.json();
             if (data.success) {
@@ -882,7 +761,6 @@
         }
 
         function setEditorPiece(pieceKey) {
-            playSFX('click');
             editorSelectedPiece = pieceKey;
             let names = {
                 'P': '♙ Tốt trắng', 'N': '♘ Mã trắng', 'B': '♗ Tượng trắng', 'R': '♖ Xe trắng', 'Q': '♕ Hậu trắng', 'K': '♔ Vua trắng',
@@ -927,7 +805,6 @@
         }
 
         function handleEditorSquareClick(sqName) {
-            playSFX('click');
             if (editorSelectedPiece === 'del') {
                 editorBoardFenMap[sqName] = {piece: "", color: ""};
             } else {
@@ -945,7 +822,6 @@
         }
 
         async function saveEditorChanges() {
-            playSFX('click');
             let res = await fetch('/apply-editor-board', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -963,7 +839,6 @@
         }
 
         function closeModal(id) { 
-            playSFX('click');
             document.getElementById(id).style.display = 'none'; 
             if (['menu-modal', 'shop-modal', 'tools-modal', 'achievements-modal'].includes(id) && isGameStarted) {
                 document.getElementById('game-wrapper').classList.remove('hidden-board');
@@ -971,7 +846,6 @@
         }
 
         async function startGame() {
-            playSFX('click');
             closeModal('menu-modal');
             isGameStarted = true;
             document.getElementById('game-wrapper').classList.remove('hidden-board');
@@ -985,7 +859,6 @@
         }
 
         async function saveGame() {
-            playSFX('click');
             let res = await fetch('/save-game', { method: 'POST' });
             let data = await res.json();
             if (data.success) alert('💾 Đã lưu game thành công!');
@@ -993,7 +866,6 @@
         }
 
         async function loadSavedGame() {
-            playSFX('click');
             let res = await fetch('/load-game', { method: 'POST' });
             let data = await res.json();
             if (data.success) {
@@ -1014,7 +886,6 @@
         }
 
         async function getHint() {
-            playSFX('click');
             if (!isGameStarted || currentTurn !== userColor || isAiThinking || (statusInfo && statusInfo.is_over)) return;
             let res = await fetch('/get-hint', { method: 'POST' });
             let data = await res.json();
@@ -1028,7 +899,6 @@
         }
 
         async function resetGame() {
-            playSFX('click');
             let res = await fetch('/reset', { method: 'POST' });
             let data = await res.json();
             isModalShown = false;
@@ -1049,7 +919,6 @@
         }
 
         function showAchievementPopup(achName) {
-            playSFX('win');
             let popup = document.getElementById('achievement-popup');
             popup.innerText = `🏆 Mở khóa Thành Tựu: ${achName}!`;
             popup.classList.add('show');
@@ -1059,8 +928,6 @@
         }
 
         function syncBoardData(data) {
-            let prevCapturedTotal = capturedData.white_captured.length + capturedData.black_captured.length;
-            
             boardData = data.board;
             legalMoves = data.legal_moves;
             currentTurn = data.turn;
@@ -1073,27 +940,6 @@
             if (data.difficulty) currentDifficulty = data.difficulty;
             if (data.user_side_setting) userSideSetting = data.user_side_setting;
             if (data.control_mode) currentControlMode = data.control_mode;
-
-            // Xử lý phát âm thanh phù hợp cho nước đi (Đi thường / Ăn quân / Chiếu / Thắng / Thua)
-            let newCapturedTotal = capturedData.white_captured.length + capturedData.black_captured.length;
-            if (data.pgn && data.pgn !== "Chưa có nước đi") {
-                let isCheck = data.eval && (data.eval.includes('Chiếu') || data.eval.includes('+'));
-                if (statusInfo && statusInfo.is_over) {
-                    if (statusInfo.title && statusInfo.title.includes('THẮNG')) {
-                        playSFX('win');
-                    } else if (statusInfo.title && statusInfo.title.includes('THUA')) {
-                        playSFX('lose');
-                    } else {
-                        playSFX('check');
-                    }
-                } else if (isCheck) {
-                    playSFX('check');
-                } else if (newCapturedTotal > prevCapturedTotal) {
-                    playSFX('capture');
-                } else {
-                    playSFX('move');
-                }
-            }
 
             document.getElementById('eval-text').innerText = data.eval;
             document.getElementById('pgn-text').innerText = currentPgn;
@@ -1173,7 +1019,6 @@
         }
 
         async function buyDoubleCoins() {
-            playSFX('click');
             let res = await fetch('/buy-double-coins', { method: 'POST' });
             let data = await res.json();
             if (data.success) {
@@ -1183,7 +1028,6 @@
         }
 
         async function buyEditor() {
-            playSFX('click');
             let res = await fetch('/buy-editor', { method: 'POST' });
             let data = await res.json();
             if (data.success) {
@@ -1193,7 +1037,6 @@
         }
 
         async function buyTheme(themeId) {
-            playSFX('click');
             let res = await fetch('/buy-theme', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -1207,7 +1050,6 @@
         }
 
         async function useTheme(themeId) {
-            playSFX('click');
             let res = await fetch('/use-theme', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -1397,7 +1239,6 @@
 
             if (selectedSquare === null) {
                 if (sqInfo && sqInfo.color === currentTurn) {
-                    playSFX('click');
                     selectedSquare = sqName;
                     validTargets = legalMoves
                         .filter(m => m.startsWith(sqName))
@@ -1424,14 +1265,12 @@
                     selectedSquare = null;
                     validTargets = [];
                 } else if (sqInfo && sqInfo.color === currentTurn) {
-                    playSFX('click');
                     selectedSquare = sqName;
                     validTargets = legalMoves
                         .filter(m => m.startsWith(sqName))
                         .map(m => m.substring(2, 4));
                     renderBoard();
                 } else {
-                    playSFX('click');
                     selectedSquare = null;
                     validTargets = [];
                     renderBoard();
@@ -1468,7 +1307,6 @@
         }
 
         function selectPromotion(pieceChar) {
-            playSFX('click');
             document.getElementById('promotion-modal').style.display = 'none';
             if (pendingPromotionMove) {
                 let finalMove = pendingPromotionMove + pieceChar.toLowerCase();
@@ -1514,7 +1352,6 @@
         }
 
         async function copyMainPGN() {
-            playSFX('click');
             if (!currentPgn || currentPgn === "Chưa có nước đi") return;
             try {
                 await navigator.clipboard.writeText(currentPgn);
