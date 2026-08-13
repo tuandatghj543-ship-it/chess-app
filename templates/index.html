@@ -89,6 +89,11 @@
         .promotion-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
         .promo-btn { background: #3a3a3a; border: 2px solid #7b61ff; border-radius: 8px; font-size: 28px; padding: 10px 0; cursor: pointer; color: #fff; }
 
+        .music-box { background: #1a1a1a; border: 1px solid #444; padding: 8px; border-radius: 8px; margin: 8px 0; text-align: left; }
+        .music-controls { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+        .m-btn { background: #333; color: white; border: 1px solid #666; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 4px; cursor: pointer; flex: 1; min-width: 80px; }
+        .m-btn.active { background: #00e676; color: #000; border-color: #00e676; }
+
         .setting-row { display: flex; justify-content: space-between; align-items: center; margin: 6px 0; font-size: 13px; font-weight: bold; }
         .modal-actions { display: flex; gap: 8px; justify-content: space-between; }
         .modal-btn-menu { flex: 1; background: #3a3a3a; color: #fff; border: 2px solid #666; padding: 8px 10px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; }
@@ -129,6 +134,8 @@
                 <button class="menu-btn" onclick="openMenu()">🏠 Menu</button>
             </div>
         </div>
+
+        <audio id="bg-music" onended="handleSongEnded()"></audio>
 
         <div class="eval-box" id="eval-text">Bắt đầu ván đấu mới! Chúc bạn chơi vui vẻ 🐧</div>
 
@@ -264,6 +271,18 @@
             <button class="opt-btn" id="btn-medium" onclick="setDifficulty('medium')">⚖️ Vừa (Thắng +4đ | Hòa +2đ)</button>
             <button class="opt-btn" id="btn-hard" onclick="setDifficulty('hard')">👹 Khó (Thắng +10đ | Hòa +5đ)</button>
 
+            <div class="music-box">
+                <div class="setting-row" style="margin:0;">
+                    <span>🎵 Nhạc nền Chill:</span>
+                    <button class="menu-btn" id="music-toggle-btn" onclick="toggleMusic()" style="background: #555;">Tắt 🔇</button>
+                </div>
+                <div style="font-size: 11px; color: #ffeb3b; margin-top: 4px;" id="current-song-display">Bài: music_chess1.mp3</div>
+                <div class="music-controls">
+                    <button class="m-btn" id="btn-loop-one" onclick="toggleLoopSingle()">🔁 Lặp 1 bài: TẮT</button>
+                    <button class="m-btn" onclick="nextSong()">⏭️ Bài tiếp</button>
+                </div>
+            </div>
+
             <button class="play-btn" onclick="startGame()">▶️ TIẾP TỤC / VÁN MỚI</button>
             <button class="load-btn-menu" id="load-save-btn" onclick="loadSavedGame()" style="display:none;">📂 TẢI GAME ĐÃ LƯU</button>
             <button class="ach-btn-menu" onclick="openAchievementsModal()">🏆 THÀNH TỰU</button>
@@ -361,6 +380,85 @@
         let editorSelectedPiece = 'P';
         let editorBoardFenMap = {};
 
+        let playlist = ["music_chess1.mp3"];
+        let currentTrackIndex = 0;
+        let isLoopSingle = false;
+        let isMusicPlaying = false;
+        const musicAudio = document.getElementById('bg-music');
+
+        async function fetchPlaylist() {
+            try {
+                let res = await fetch('/get-playlist');
+                let data = await res.json();
+                if (data.playlist && data.playlist.length > 0) playlist = data.playlist;
+            } catch (e) { console.log(e); }
+            updateMusicUI();
+        }
+
+        function playCurrentTrack() {
+            if (!playlist || playlist.length === 0) return;
+            let filename = playlist[currentTrackIndex];
+            musicAudio.src = '/play-music/' + encodeURIComponent(filename);
+            if (isMusicPlaying) musicAudio.play().catch(e => console.log(e));
+            updateMusicUI();
+        }
+
+        function handleSongEnded() {
+            if (isLoopSingle) {
+                musicAudio.currentTime = 0;
+                musicAudio.play().catch(e => console.log(e));
+            } else {
+                currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+                playCurrentTrack();
+            }
+        }
+
+        function nextSong() {
+            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+            playCurrentTrack();
+        }
+
+        function toggleLoopSingle() {
+            isLoopSingle = !isLoopSingle;
+            updateMusicUI();
+        }
+
+        function toggleMusic() {
+            let btn = document.getElementById('music-toggle-btn');
+            if (isMusicPlaying) {
+                musicAudio.pause();
+                btn.innerText = "Tắt 🔇";
+                btn.style.background = "#555";
+                isMusicPlaying = false;
+            } else {
+                if (!musicAudio.src) playCurrentTrack();
+                else {
+                    musicAudio.play().then(() => {
+                        btn.innerText = "Bật 🔊";
+                        btn.style.background = "#7b61ff";
+                        isMusicPlaying = true;
+                    }).catch(e => console.log("Audio error:", e));
+                }
+            }
+        }
+
+        function updateMusicUI() {
+            let loopBtn = document.getElementById('btn-loop-one');
+            if (isLoopSingle) {
+                loopBtn.innerText = "🔁 Lặp 1 bài: BẬT";
+                loopBtn.classList.add('active');
+            } else {
+                loopBtn.innerText = "🔁 Lặp 1 bài: TẮT";
+                loopBtn.classList.remove('active');
+            }
+            let songDisplay = document.getElementById('current-song-display');
+            if (playlist.length > 0) {
+                songDisplay.innerText = "Bài (" + (currentTrackIndex + 1) + "/" + playlist.length + "): " + playlist[currentTrackIndex];
+            } else {
+                songDisplay.innerText = "Chưa có nhạc";
+            }
+        }
+
         async function setControlMode(mode) {
             if (isGameStarted) return;
             currentControlMode = mode;
@@ -428,6 +526,8 @@
             document.getElementById('side-text').innerText = (userColor === 'w') ? 'Trắng (♔)' : 'Đen (♚)';
             document.getElementById('mode-bonus-badge').style.display = (currentControlMode === 'text') ? 'inline' : 'none';
             document.getElementById('text-move-container').style.display = (currentControlMode === 'text') ? 'flex' : 'none';
+
+            updateMusicUI();
         }
 
         async function openMenu() {
@@ -1258,6 +1358,7 @@
         }
 
         async function initGame() {
+            await fetchPlaylist();
             let res = await fetch('/init-data');
             let data = await res.json();
             syncBoardData(data);
@@ -1269,4 +1370,4 @@
         initGame();
     </script>
 </body>
-</html>
+                </html>
