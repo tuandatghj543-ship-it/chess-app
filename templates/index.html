@@ -46,7 +46,7 @@
         .selected { background-color: #7b61ff !important; }
         .hint-source { outline: 4px solid #00e676 !important; outline-offset: -4px; z-index: 8; border-radius: 50%; }
 
-        .piece-element { position: absolute; width: 12.5%; height: 12.5%; display: flex; align-items: center; justify-content: center; font-size: calc(100vw / 11); max-font-size: 26px; pointer-events: none; z-index: 10; transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1); }
+        .piece-element { position: absolute; width: 12.5%; height: 12.5%; display: flex; align-items: center; justify-content: center; font-size: calc(100vw / 11); max-font-size: 26px; pointer-events: none; z-index: 10; transition: transform 0.15s ease-out; }
         @media (min-width: 360px) { .piece-element { font-size: 26px; } }
 
         .dot { position: absolute; width: 30%; height: 30%; background-color: rgba(0, 0, 0, 0.35); border-radius: 50%; z-index: 4; }
@@ -56,7 +56,7 @@
         #arrow-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 20; }
 
         .coords-row { display: grid; grid-template-columns: repeat(8, 1fr); color: #aaa; font-size: 12px; font-weight: bold; padding: 4px 0; margin-left: 24px; margin-right: 24px; text-align: center; }
-        .coords-col { display: flex; flex-direction: column; justify-content: space-around; color: #aaa; font-size: 12px; font-weight: bold; width: 24px; align-items: center; aspect-ratio: 1 / 1; }
+        .coords-col { display: flex; flex-direction: column; justify-style: space-around; color: #aaa; font-size: 12px; font-weight: bold; width: 24px; align-items: center; aspect-ratio: 1 / 1; }
 
         .text-move-box { display: flex; gap: 6px; width: 100%; max-width: 360px; margin: 6px auto; }
         .text-move-input { flex: 1; padding: 8px 12px; font-size: 14px; font-weight: bold; border: 2px solid #7b61ff; border-radius: 6px; background: #222; color: #fff; outline: none; }
@@ -380,27 +380,28 @@
         let editorSelectedPiece = 'P';
         let editorBoardFenMap = {};
 
-        // DANH SÁCH FILE NHẠC TỪ THƯ MỤC music_chess/
-        let playlist = [
-            "music_chess/music_chess1.mp3",
-            "music_chess/music_chess2.mp3",
-            "music_chess/music_chess3.mp3"
-        ];
+        let playlist = ["music_chess1.mp3"];
         let currentTrackIndex = 0;
         let isLoopSingle = false;
         let isMusicPlaying = false;
         const musicAudio = document.getElementById('bg-music');
 
         async function fetchPlaylist() {
-            // Đã dùng playlist cố định dạng music_chess/*
+            try {
+                let res = await fetch('/get-playlist');
+                let data = await res.json();
+                if (data.playlist && data.playlist.length > 0) playlist = data.playlist;
+            } catch (e) { console.log(e); }
             updateMusicUI();
         }
 
         function playCurrentTrack() {
             if (!playlist || playlist.length === 0) return;
-            let filepath = playlist[currentTrackIndex];
-            musicAudio.src = '/' + filepath;
-            if (isMusicPlaying) musicAudio.play().catch(e => console.log(e));
+            let filename = playlist[currentTrackIndex];
+            musicAudio.src = '/0/music_chess/' + encodeURIComponent(filename);
+            if (isMusicPlaying) {
+                musicAudio.play().catch(e => console.log(e));
+            }
             updateMusicUI();
         }
 
@@ -432,14 +433,12 @@
                 btn.style.background = "#555";
                 isMusicPlaying = false;
             } else {
-                if (!musicAudio.src) playCurrentTrack();
-                else {
-                    musicAudio.play().then(() => {
-                        btn.innerText = "Bật 🔊";
-                        btn.style.background = "#7b61ff";
-                        isMusicPlaying = true;
-                    }).catch(e => console.log("Audio error:", e));
-                }
+                isMusicPlaying = true;
+                playCurrentTrack();
+                musicAudio.play().then(() => {
+                    btn.innerText = "Bật 🔊";
+                    btn.style.background = "#7b61ff";
+                }).catch(e => console.log("Audio error:", e));
             }
         }
 
@@ -454,8 +453,7 @@
             }
             let songDisplay = document.getElementById('current-song-display');
             if (playlist.length > 0) {
-                let trackName = playlist[currentTrackIndex].split('/').pop();
-                songDisplay.innerText = "Bài (" + (currentTrackIndex + 1) + "/" + playlist.length + "): " + trackName;
+                songDisplay.innerText = "Bài (" + (currentTrackIndex + 1) + "/" + playlist.length + "): " + playlist[currentTrackIndex];
             } else {
                 songDisplay.innerText = "Chưa có nhạc";
             }
@@ -854,7 +852,7 @@
             if (currentTurn !== userColor && !statusInfo.is_over && !isAiThinking) {
                 isAiThinking = true;
                 renderBoard();
-                setTimeout(triggerAiMove, 400);
+                triggerAiMove();
             }
         }
 
@@ -880,7 +878,7 @@
                 if (currentTurn !== userColor && !statusInfo.is_over) {
                     isAiThinking = true;
                     renderBoard();
-                    setTimeout(triggerAiMove, 400);
+                    triggerAiMove();
                 }
             } else alert('Không tìm thấy bản lưu cũ!');
         }
@@ -914,7 +912,7 @@
             if (currentTurn !== userColor && !statusInfo.is_over) {
                 isAiThinking = true;
                 renderBoard();
-                setTimeout(triggerAiMove, 400);
+                triggerAiMove();
             }
         }
 
@@ -956,7 +954,7 @@
                     document.getElementById('modal-title').innerText = statusInfo.title;
                     document.getElementById('modal-msg').innerText = statusInfo.message;
                     document.getElementById('game-modal').style.display = 'flex';
-                }, 300);
+                }, 100);
             }
         }
 
@@ -1228,7 +1226,7 @@
                 }
             }
 
-            setTimeout(() => drawHintArrow(hintFrom, hintTo, files, ranks), 100);
+            requestAnimationFrame(() => drawHintArrow(hintFrom, hintTo, files, ranks));
         }
 
         function handleSquareClick(sqName, sqInfo) {
@@ -1302,7 +1300,7 @@
             if (currentTurn !== userColor && !statusInfo.is_over) {
                 isAiThinking = true;
                 renderBoard();
-                setTimeout(triggerAiMove, 300);
+                triggerAiMove();
             }
         }
 
@@ -1330,7 +1328,7 @@
                 if (currentTurn !== userColor && !statusInfo.is_over) {
                     isAiThinking = true;
                     renderBoard();
-                    setTimeout(triggerAiMove, 300);
+                    triggerAiMove();
                 }
             } catch (err) {
                 isAiThinking = false;
