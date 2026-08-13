@@ -3,12 +3,15 @@ import math
 import os
 import random
 import chess
-from flask import Flask, Response, jsonify, render_template, request
+from flask import Flask, Response, jsonify, render_template_string, request
 
 app = Flask(__name__)
 
 SAVE_FILE = "save_game.json"
-MUSIC_FOLDER = "/storage/emulated/0/music"
+ANDROID_MUSIC = "/storage/emulated/0/chess_app/music"
+PROJECT_MUSIC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "music")
+
+MUSIC_FOLDER = ANDROID_MUSIC if os.path.isdir(ANDROID_MUSIC) else PROJECT_MUSIC
 
 board = chess.Board()
 ai_difficulty = "easy"
@@ -627,7 +630,7 @@ HTML_TEMPLATE = """
 
         <div class="board-container">
             <div class="captured-box" id="top-captured-box">
-                 <div class="captured-pieces" id="top-captured-list"></div>
+                <div class="captured-pieces" id="top-captured-list"></div>
                 <div class="captured-score" id="top-captured-score" style="display:none;"></div>
             </div>
 
@@ -1862,7 +1865,7 @@ HTML_TEMPLATE = """
 
 @app.route("/", methods=["GET"])
 def index():
-       return render_template("index.html")
+    return render_template_string(HTML_TEMPLATE)
 
 
 @app.route("/init-data", methods=["GET"])
@@ -2471,6 +2474,6 @@ def reset_game_route():
         "captured": get_captured_and_material()
     })
 
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-
