@@ -424,22 +424,26 @@
         }
 
         function toggleMusic() {
-            let btn = document.getElementById('music-toggle-btn');
-            if (isMusicPlaying) {
-                musicAudio.pause();
-                btn.innerText = "Tắt 🔇";
-                btn.style.background = "#555";
-                isMusicPlaying = false;
-            } else {
-                if (!musicAudio.src) playCurrentTrack();
-                else {
-                    musicAudio.play().then(() => {
-                        btn.innerText = "Bật 🔊";
-                        btn.style.background = "#7b61ff";
-                        isMusicPlaying = true;
-                    }).catch(e => console.log("Audio error:", e));
-                }
-            }
+    let btn = document.getElementById('music-toggle-btn');
+
+    if (isMusicPlaying) {
+        musicAudio.pause();
+        btn.innerText = "Tắt 🔇";
+        btn.style.background = "#555";
+        isMusicPlaying = false;
+    } else {
+        if (!musicAudio.src) {
+            let filename = playlist[currentTrackIndex];
+            musicAudio.src = '/play-music/' + encodeURIComponent(filename);
+        }
+
+        musicAudio.play().then(() => {
+            btn.innerText = "Bật 🔊";
+            btn.style.background = "#7b61ff";
+            isMusicPlaying = true;
+        }).catch(e => console.log("Audio error:", e));
+    }
+}
         }
 
         function updateMusicUI() {
@@ -1370,4 +1374,4 @@
         initGame();
     </script>
 </body>
-                </html>
+            </html>
