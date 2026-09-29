@@ -20,6 +20,25 @@
         .save-btn { background: #2196f3; color: white; border: none; padding: 6px 10px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; }
         .tools-btn { background: #00bcd4; color: #000; border: none; padding: 6px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; border: 2px solid #ffeb3b; }
 
+        /* Nút Tỉ lệ 1:1 hình vuông trên góc Menu */
+        .icon-square-btn {
+            width: 32px;
+            height: 32px;
+            aspect-ratio: 1 / 1;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            padding: 0;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        }
+        .analysis-tab-btn { background: #00bcd4; color: #000; }
+        .achievements-tab-btn { background: #e91e63; color: #fff; }
+
         .eval-box { background: #2c2c2c; border: 2px dashed #7b61ff; padding: 6px 10px; border-radius: 6px; margin: 6px auto; width: 100%; max-width: 360px; font-size: 14px; font-weight: bold; color: #ffeb3b; min-height: 22px; }
 
         .board-container { display: inline-block; background: #2c2c2c; padding: 6px 4px; border-radius: 8px; box-shadow: 0 6px 12px rgba(0,0,0,0.5); margin: 2px auto; width: 100%; max-width: 360px; }
@@ -80,7 +99,6 @@
 
         .play-btn { background: #00e676; color: #000; border: none; width: 100%; padding: 10px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 10px; }
         .load-btn-menu { background: #ff9800; color: #000; border: none; width: 100%; padding: 9px; font-size: 14px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 6px; }
-        .ach-btn-menu { background: #e91e63; color: #fff; border: none; width: 100%; padding: 9px; font-size: 14px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 6px; }
 
         .shop-item { background: #1e1e1e; border: 1px solid #444; padding: 8px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
         .shop-item-btn { background: #2196F3; color: white; border: none; padding: 5px 10px; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; }
@@ -113,6 +131,9 @@
         .achievement-card.unlocked { border-color: #00e676; background: rgba(0,230,118,0.08); }
         .achievement-icon { font-size: 22px; min-width: 30px; text-align: center; }
 
+        .history-card { background: #222; border: 1px solid #00bcd4; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; text-align: left; cursor: pointer; transition: background 0.2s; }
+        .history-card:hover { background: #2e3b4e; }
+
         #achievement-popup { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) scale(0.8); background: linear-gradient(135deg, #ffeb3b, #ff9800); color: #000; padding: 12px 20px; border-radius: 12px; font-weight: bold; font-size: 15px; z-index: 2000; box-shadow: 0 0 20px rgba(255,235,59,0.9); opacity: 0; pointer-events: none; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         #achievement-popup.show { transform: translateX(-50%) scale(1); opacity: 1; }
     </style>
@@ -141,7 +162,7 @@
 
         <div class="board-container">
             <div class="captured-box" id="top-captured-box">
-                 <div class="captured-pieces" id="top-captured-list"></div>
+                <div class="captured-pieces" id="top-captured-list"></div>
                 <div class="captured-score" id="top-captured-score" style="display:none;"></div>
             </div>
 
@@ -251,7 +272,13 @@
         <div class="modal-content">
             <span class="close-x-btn" id="menu-close-x" style="display: none;" onclick="closeModal('menu-modal')">✕</span>
 
-            <div class="modal-title">🎮 MENU CHÍNH</div>
+            <!-- 2 NÚT SÙNG 📊 VÀ 🏆 TỈ LỆ 1:1 TẠI GÓC TRÊN CỦA BẢNG MENU -->
+            <div style="position: absolute; top: 8px; left: 12px; display: flex; gap: 6px;">
+                <button class="icon-square-btn analysis-tab-btn" onclick="openAnalysisModal()" title="Phân tích ván cờ">📊</button>
+                <button class="icon-square-btn achievements-tab-btn" onclick="openAchievementsModal()" title="Thành tựu">🏆</button>
+            </div>
+
+            <div class="modal-title" style="margin-top: 6px;">🎮 MENU CHÍNH</div>
             
             <p style="text-align: left; font-size: 12px; color: #aaa; margin: 4px 0 2px 0;">1. Cách chơi:</p>
             <div style="display: flex; gap: 4px;">
@@ -276,7 +303,7 @@
                     <span>🎵 Nhạc nền Chill:</span>
                     <button class="menu-btn" id="music-toggle-btn" onclick="toggleMusic()" style="background: #555;">Tắt 🔇</button>
                 </div>
-                <div style="font-size: 11px; color: #ffeb3b; margin-top: 4px;" id="current-song-display">Bài: music_chess1.mp3</div>
+                <div style="font-size: 11px; color: #ffeb3b; margin-top: 4px;" id="current-song-display">Bài: Chưa có nhạc</div>
                 <div class="music-controls">
                     <button class="m-btn" id="btn-loop-one" onclick="toggleLoopSingle()">🔁 Lặp 1 bài: TẮT</button>
                     <button class="m-btn" onclick="nextSong()">⏭️ Bài tiếp</button>
@@ -285,10 +312,56 @@
 
             <button class="play-btn" onclick="startGame()">▶️ TIẾP TỤC / VÁN MỚI</button>
             <button class="load-btn-menu" id="load-save-btn" onclick="loadSavedGame()" style="display:none;">📂 TẢI GAME ĐÃ LƯU</button>
-            <button class="ach-btn-menu" onclick="openAchievementsModal()">🏆 THÀNH TỰU</button>
             
             <div style="display: flex; gap: 6px; margin-top: 6px;">
                 <button class="shop-item-btn" style="flex:1; background:#d32f2f; padding:8px;" onclick="confirmClearData()">🗑️ Xóa Dữ Liệu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PHÂN TÍCH -->
+    <div class="modal-overlay" id="analysis-modal" style="display: none;">
+        <div class="modal-content" style="border-color: #00bcd4; max-width: 350px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <button class="menu-btn" style="background:#555; padding: 4px 10px;" onclick="closeModal('analysis-modal'); openMenu();">⬅️ Menu</button>
+                <div class="modal-title" style="margin: 0; color: #00bcd4; font-size: 18px;">📊 PHÂN TÍCH VÁN ĐẤU</div>
+                <div style="width: 45px;"></div>
+            </div>
+
+            <!-- CHẾ ĐỘ 1: DANH SÁCH VÁN ĐẤU VÀ NHẬP PGN -->
+            <div id="analysis-view-list">
+                <p style="font-size: 12px; color: #aaa; margin: 4px 0 6px 0; text-align: left; font-weight: bold;">📜 Danh sách ván đấu từ trước:</p>
+                <div id="history-games-container" style="max-height: 170px; overflow-y: auto; margin-bottom: 10px; border: 1px solid #444; padding: 6px; border-radius: 8px; background: #1a1a1a;">
+                    <div style="font-size: 12px; color: #777;">Đang tải danh sách...</div>
+                </div>
+
+                <div style="border-top: 1px dashed #555; padding-top: 8px; text-align: left;">
+                    <p style="font-size: 12px; color: #ffeb3b; margin: 0 0 4px 0; font-weight: bold;">📥 Phân tích bằng PGN:</p>
+                    <textarea id="pgn-input" style="width: 100%; height: 60px; background: #181818; color: #fff; border: 1px solid #00bcd4; border-radius: 6px; padding: 6px; font-size: 12px; font-family: monospace; resize: none; outline: none;" placeholder="Dán PGN vào đây..."></textarea>
+                    <button class="play-btn" style="background: #00bcd4; color: #000; padding: 8px; font-size: 14px; margin-top: 6px;" onclick="submitPgnForAnalysis()">▶️ Bắt đầu phân tích PGN</button>
+                </div>
+            </div>
+
+            <!-- CHẾ ĐỘ 2: BÀN CỜ MINH HỌA & LỜI THOẠI AI -->
+            <div id="analysis-view-board" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <button class="shop-item-btn" style="background:#555;" onclick="switchAnalysisView('list')">⬅️ Danh sách</button>
+                    <span id="analysis-game-title" style="font-size: 12px; font-weight: bold; color: #ffeb3b;">Ván đấu</span>
+                </div>
+
+                <div style="position: relative; width: 210px; margin: 2px auto;">
+                    <div class="mini-chessboard" id="analysis-mini-board"></div>
+                </div>
+
+                <div style="display: flex; gap: 8px; align-items: center; justify-content: center; margin: 6px 0;">
+                    <button class="shop-item-btn" style="padding: 8px 16px; font-size: 16px; background:#7b61ff;" onclick="stepAnalysis(-1)">&lt;</button>
+                    <span id="analysis-step-indicator" style="font-weight: bold; font-size: 13px; color: #ffeb3b; min-width: 80px; text-align: center;">0 / 0</span>
+                    <button class="shop-item-btn" style="padding: 8px 16px; font-size: 16px; background:#7b61ff;" onclick="stepAnalysis(1)">&gt;</button>
+                </div>
+
+                <div style="background: #181818; border: 1px solid #00bcd4; padding: 8px; border-radius: 8px; font-size: 12px; color: #00e676; text-align: left; min-height: 55px; line-height: 1.4;" id="analysis-comment-box">
+                    💬 Lời thoại AI...
+                </div>
             </div>
         </div>
     </div>
@@ -371,16 +444,38 @@
         let validTargets = [];
         let hintMove = null;
         let isAiThinking = false;
+        let aiMoveTimer = null;
+
+        function scheduleAiMove(delay = 300) {
+            if (aiMoveTimer !== null) clearTimeout(aiMoveTimer);
+            aiMoveTimer = setTimeout(() => {
+                aiMoveTimer = null;
+                if (isGameStarted && currentTurn !== userColor && !(statusInfo && statusInfo.is_over) && isAiThinking) {
+                    triggerAiMove();
+                }
+            }, delay);
+        }
+
+        function cancelAiMoveTimer() {
+            if (aiMoveTimer !== null) {
+                clearTimeout(aiMoveTimer);
+                aiMoveTimer = null;
+            }
+        }
         let isGameStarted = false;
         let isModalShown = false;
         let pendingPromotionMove = null;
 
         let replayStatesList = [];
         let currentReplayIndex = 0;
+
+        let activeAnalysisStates = [];
+        let activeAnalysisIndex = 0;
+
         let editorSelectedPiece = 'P';
         let editorBoardFenMap = {};
 
-        let playlist = ["music_chess1.mp3"];
+        let playlist = [];
         let currentTrackIndex = 0;
         let isLoopSingle = false;
         let isMusicPlaying = false;
@@ -391,6 +486,7 @@
                 let res = await fetch('/get-playlist');
                 let data = await res.json();
                 if (data.playlist && data.playlist.length > 0) playlist = data.playlist;
+                else playlist = [];
             } catch (e) { console.log(e); }
             updateMusicUI();
         }
@@ -414,6 +510,7 @@
         }
 
         function nextSong() {
+            if (!playlist || playlist.length === 0) return;
             currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
             playCurrentTrack();
         }
@@ -424,26 +521,31 @@
         }
 
         function toggleMusic() {
-    let btn = document.getElementById('music-toggle-btn');
-
-    if (isMusicPlaying) {
-        musicAudio.pause();
-        btn.innerText = "Tắt 🔇";
-        btn.style.background = "#555";
-        isMusicPlaying = false;
-    } else {
-        if (!musicAudio.src) {
-            let filename = playlist[currentTrackIndex];
-            musicAudio.src = '/play-music/' + encodeURIComponent(filename);
-        }
-
-        musicAudio.play().then(() => {
-            btn.innerText = "Bật 🔊";
-            btn.style.background = "#7b61ff";
-            isMusicPlaying = true;
-        }).catch(e => console.log("Audio error:", e));
-    }
-}
+            let btn = document.getElementById('music-toggle-btn');
+            if (isMusicPlaying) {
+                musicAudio.pause();
+                btn.innerText = "Tắt 🔇";
+                btn.style.background = "#555";
+                isMusicPlaying = false;
+            } else {
+                if (!playlist || playlist.length === 0) {
+                    alert("Không tìm thấy bài hát nào trong thư mục Music!");
+                    return;
+                }
+                if (!musicAudio.src) {
+                    isMusicPlaying = true;
+                    playCurrentTrack();
+                    btn.innerText = "Bật 🔊";
+                    btn.style.background = "#7b61ff";
+                }
+                else {
+                    musicAudio.play().then(() => {
+                        btn.innerText = "Bật 🔊";
+                        btn.style.background = "#7b61ff";
+                        isMusicPlaying = true;
+                    }).catch(e => console.log("Audio error:", e));
+                }
+            }
         }
 
         function updateMusicUI() {
@@ -456,10 +558,10 @@
                 loopBtn.classList.remove('active');
             }
             let songDisplay = document.getElementById('current-song-display');
-            if (playlist.length > 0) {
+            if (playlist && playlist.length > 0) {
                 songDisplay.innerText = "Bài (" + (currentTrackIndex + 1) + "/" + playlist.length + "): " + playlist[currentTrackIndex];
             } else {
-                songDisplay.innerText = "Chưa có nhạc";
+                songDisplay.innerText = "Không thấy file nhạc trong Music";
             }
         }
 
@@ -484,7 +586,12 @@
                 body: JSON.stringify({ side_setting: side, difficulty: currentDifficulty, mode: currentControlMode })
             });
             let data = await res.json();
-            syncBoardData(data);
+            if (!data.success) {
+                alert(data.message || "Không thể đổi bên!");
+                return;
+            }
+            userSideSetting = side;
+            updateMenuUI();
         }
 
         async function setDifficulty(level) {
@@ -556,12 +663,159 @@
             document.getElementById('menu-modal').style.display = 'flex';
         }
 
+        async function openAnalysisModal() {
+            closeModal('menu-modal');
+            switchAnalysisView('list');
+            document.getElementById('analysis-modal').style.display = 'flex';
+            fetchHistoryGames();
+        }
+
+        function switchAnalysisView(viewMode) {
+            let viewList = document.getElementById('analysis-view-list');
+            let viewBoard = document.getElementById('analysis-view-board');
+            if (viewMode === 'list') {
+                viewList.style.display = 'block';
+                viewBoard.style.display = 'none';
+            } else {
+                viewList.style.display = 'none';
+                viewBoard.style.display = 'block';
+            }
+        }
+
+        async function fetchHistoryGames() {
+            let container = document.getElementById('history-games-container');
+            container.innerHTML = '<div style="font-size:12px; color:#aaa;">Đang tải danh sách...</div>';
+            
+            try {
+                let res = await fetch('/get-history-list');
+                let data = await res.json();
+                let games = data.games || [];
+
+                if (games.length === 0) {
+                    container.innerHTML = '<div style="font-size:12px; color:#888;">Chưa có ván đấu nào hoàn thành trước đây. Chơi 1 ván để tự động lưu tại đây!</div>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                games.forEach(g => {
+                    let card = document.createElement('div');
+                    card.className = 'history-card';
+                    card.onclick = () => loadGameDetailForAnalysis(g.id, g.title);
+                    
+                    let resColor = (g.result === 'Player win') ? '#00e676' : ((g.result === 'AI win') ? '#ff5555' : '#ffeb3b');
+
+                    card.innerHTML = `
+                        <div style="font-weight: bold; font-size: 13px; color: #ffeb3b;">${g.title}</div>
+                        <div style="font-size: 11px; color: #aaa;">Vào lúc: ${g.time}</div>
+                        <div style="font-size: 11px; font-weight: bold; color: ${resColor}; margin-top:2px;">Kết quả: ${g.result}</div>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (err) {
+                container.innerHTML = '<div style="font-size:12px; color:#ff5555;">Lỗi khi lấy danh sách ván đấu!</div>';
+            }
+        }
+
+        async function loadGameDetailForAnalysis(gameId, titleStr) {
+            let res = await fetch('/get-history-detail/' + gameId);
+            let data = await res.json();
+            if (data.success) {
+                activeAnalysisStates = data.states;
+                activeAnalysisIndex = 0;
+                document.getElementById('analysis-game-title').innerText = titleStr;
+                switchAnalysisView('board');
+                updateAnalysisBoardUI();
+            }
+        }
+
+        async function submitPgnForAnalysis() {
+            let pgnText = document.getElementById('pgn-input').value.trim();
+            if (!pgnText) {
+                alert("Vui lòng dán chuỗi PGN vào ô nhập!");
+                return;
+            }
+
+            let res = await fetch('/parse-pgn', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ pgn: pgnText })
+            });
+
+            let data = await res.json();
+            if (data.success) {
+                activeAnalysisStates = data.states;
+                activeAnalysisIndex = 0;
+                document.getElementById('analysis-game-title').innerText = "Ván cờ từ PGN";
+                switchAnalysisView('board');
+                updateAnalysisBoardUI();
+            } else {
+                alert(data.message || "PGN đã lỗi hoặc sai hoàn toàn");
+            }
+        }
+
+        function stepAnalysis(direction) {
+            if (!activeAnalysisStates.length) return;
+            activeAnalysisIndex += direction;
+            if (activeAnalysisIndex < 0) activeAnalysisIndex = 0;
+            if (activeAnalysisIndex >= activeAnalysisStates.length) activeAnalysisIndex = activeAnalysisStates.length - 1;
+            updateAnalysisBoardUI();
+        }
+
+        function updateAnalysisBoardUI() {
+            let indicator = document.getElementById('analysis-step-indicator');
+            let commentBox = document.getElementById('analysis-comment-box');
+            let miniBoard = document.getElementById('analysis-mini-board');
+
+            indicator.innerText = `${activeAnalysisIndex + 1} / ${activeAnalysisStates.length}`;
+
+            if (activeAnalysisStates.length > 0) {
+                let st = activeAnalysisStates[activeAnalysisIndex];
+                let lastMoveStr = st.pgn.length > 0 ? st.pgn[st.pgn.length - 1] : "Khởi đầu ván đấu";
+                let evalText = st.eval || "Bắt đầu ván đấu mới!";
+
+                if (activeAnalysisIndex === 0) {
+                    commentBox.innerHTML = "💬 <b>Lời thoại AI:</b> Ván đấu bắt đầu! Hai bên ở vị trí xuất phát.";
+                } else {
+                    commentBox.innerHTML = `♟️ <b>Nước đi:</b> <b style="color:#ffeb3b;">${lastMoveStr}</b><br>💬 <b>Lời thoại AI:</b> ${evalText}`;
+                }
+
+                miniBoard.innerHTML = '';
+                const files = (userColor === 'w') ? ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] : ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'];
+                const ranks = (userColor === 'w') ? ['8', '7', '6', '5', '4', '3', '2', '1'] : ['1', '2', '3', '4', '5', '6', '7', '8'];
+
+                for (let r = 0; r < 8; r++) {
+                    for (let c = 0; c < 8; c++) {
+                        let isDark = (r + c) % 2 === 1;
+                        let sqDiv = document.createElement('div');
+                        sqDiv.className = 'mini-square';
+                        sqDiv.style.backgroundColor = isDark ? '#b58863' : '#f0d9b5';
+                        miniBoard.appendChild(sqDiv);
+                    }
+                }
+
+                for (let r = 0; r < 8; r++) {
+                    for (let c = 0; c < 8; c++) {
+                        let sqName = files[c] + ranks[r];
+                        let sqInfo = st.board[sqName];
+                        if (sqInfo && sqInfo.piece) {
+                            let pDiv = document.createElement('div');
+                            pDiv.className = 'mini-piece';
+                            pDiv.innerText = sqInfo.piece;
+                            pDiv.style.transform = `translate(${c * 100}%, ${r * 100}%)`;
+                            miniBoard.appendChild(pDiv);
+                        }
+                    }
+                }
+            }
+        }
+
         async function openShop() {
             fetchShopData();
             document.getElementById('shop-modal').style.display = 'flex';
         }
 
         async function openAchievementsModal() {
+            closeModal('menu-modal');
             let res = await fetch('/achievements-data');
             let data = await res.json();
             
@@ -842,12 +1096,13 @@
 
         function closeModal(id) { 
             document.getElementById(id).style.display = 'none'; 
-            if (['menu-modal', 'shop-modal', 'tools-modal', 'achievements-modal'].includes(id) && isGameStarted) {
+            if (['menu-modal', 'shop-modal', 'tools-modal', 'achievements-modal', 'analysis-modal'].includes(id) && isGameStarted) {
                 document.getElementById('game-wrapper').classList.remove('hidden-board');
             }
         }
 
         async function startGame() {
+            cancelAiMoveTimer();
             closeModal('menu-modal');
             isGameStarted = true;
             document.getElementById('game-wrapper').classList.remove('hidden-board');
@@ -856,7 +1111,7 @@
             if (currentTurn !== userColor && !statusInfo.is_over && !isAiThinking) {
                 isAiThinking = true;
                 renderBoard();
-                setTimeout(triggerAiMove, 400);
+                scheduleAiMove(400);
             }
         }
 
@@ -882,7 +1137,7 @@
                 if (currentTurn !== userColor && !statusInfo.is_over) {
                     isAiThinking = true;
                     renderBoard();
-                    setTimeout(triggerAiMove, 400);
+                    scheduleAiMove(400);
                 }
             } else alert('Không tìm thấy bản lưu cũ!');
         }
@@ -901,6 +1156,8 @@
         }
 
         async function resetGame() {
+            cancelAiMoveTimer();
+            isAiThinking = false;
             let res = await fetch('/reset', { method: 'POST' });
             let data = await res.json();
             isModalShown = false;
@@ -916,7 +1173,7 @@
             if (currentTurn !== userColor && !statusInfo.is_over) {
                 isAiThinking = true;
                 renderBoard();
-                setTimeout(triggerAiMove, 400);
+                scheduleAiMove(400);
             }
         }
 
@@ -1304,7 +1561,7 @@
             if (currentTurn !== userColor && !statusInfo.is_over) {
                 isAiThinking = true;
                 renderBoard();
-                setTimeout(triggerAiMove, 300);
+                scheduleAiMove(300);
             }
         }
 
@@ -1326,13 +1583,17 @@
                     body: JSON.stringify({ uci: uci })
                 });
                 let data = await res.json();
+                if (!data.success) {
+                    alert(data.message || "Nước đi không hợp lệ!");
+                    return;
+                }
                 syncBoardData(data);
                 renderBoard();
 
                 if (currentTurn !== userColor && !statusInfo.is_over) {
                     isAiThinking = true;
                     renderBoard();
-                    setTimeout(triggerAiMove, 300);
+                    scheduleAiMove(300);
                 }
             } catch (err) {
                 isAiThinking = false;
@@ -1341,9 +1602,14 @@
         }
 
         async function triggerAiMove() {
+            aiMoveTimer = null;
             try {
                 let res = await fetch('/ai-move', { method: 'POST' });
                 let data = await res.json();
+                if (!data.success) {
+                    console.error(data.message || "AI không thể đi!");
+                    return;
+                }
                 syncBoardData(data);
             } catch (err) {
                 console.error(err);
@@ -1374,4 +1640,4 @@
         initGame();
     </script>
 </body>
-            </html>
+</html>
